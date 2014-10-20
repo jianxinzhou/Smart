@@ -10,83 +10,104 @@
 #include "MyConf.h"
 #include <map>
 #include "MyCacheThread.h"
+
+
 class ThreadPool
 {
 	public:
 		friend class MyCacheThread ;
-		ThreadPool(  MyConf& conf, int size = 12):m_threads(size),m_lock(), m_cond(m_lock),m_on(false),m_conf(conf),m_cachethread(size)
+		
+        ThreadPool(MyConf &conf, int size = 12)
+            :vecThreads_(size),
+             queueTaskslock_(), 
+             queueTasksCond_(queueTaskslock_),
+             isStarted_(false),
+             conf_(conf),
+             cacheThread_(size)
 		{
 			std::vector<MyThread>::iterator iter ;
-			for(iter = m_threads.begin(); iter != m_threads.end(); iter ++)
+			for(iter = vecThreads_.begin(); 
+                iter != vecThreads_.end(); 
+                ++iter )
 			{
-				iter -> get_related(this);
+				iter -> get_related(this);       // 使线程池中的每一个工作线程持有线程池对象的指针
 			}
-			m_cachethread.get_related(this);
+			cacheThread_.get_related(this);      // 使线程池中的扫描线程持有线程池对象的指针
 		}
 
 		void on()
 		{
-			if(m_on)
+			if(isStarted_)
 			{
 				return ;
 			}
-			m_on = true ;
+			isStarted_ = true ;
 			std::vector<MyThread>::iterator iter ;
-			for(iter = m_threads.begin(); iter != m_threads.end(); iter ++)
+			for(iter = vecThreads_.begin(); iter != vecThreads_.end(); iter ++)
 			{
-				iter -> start();
+				iter -> start();    // 开启工作线程
 			}
-			m_cachethread.start();
+			cacheThread_.start();   // 开启扫描线程
 		}
 		void off()
 		{
-			if(m_on)
+			if(isStarted_)
 			{
-				m_on = false ;
-				m_cond.broadcast();
-				while(!m_tasks.empty())
+				isStarted_ = false ;
+				queueTasksCond_.broadcast();
+				while(!queueTasks_.empty())
 				{
-					m_tasks.pop();
+					queueTasks_.pop();
 				} 
 			}
 		}
 		void allocate_task( MyTask& task)
 		{
-			m_lock.lock();
+			queueTaskslock_.lock();
 			std::cout << "Add Task" << std::endl ;
-			m_tasks.push(task);
-			m_lock.unlock();
-			m_cond.broadcast();
+			queueTasks_.push(task);
+			queueTaskslock_.unlock();
+			queueTasksCond_.broadcast();
 		}
-		bool get_task(MyTask& task)
+		bool get_task(MyTask &task)
 		{
-			m_lock.lock();
-			while(m_on && m_tasks.empty())
+			queueTaskslock_.lock();
+			while(isStarted_ && queueTasks_.empty())
 			{
-				m_cond.wait();
+				queueTasksCond_.wait();
 			}
-			if(!m_on)
+			if(!isStarted_)
 			{ 
-				m_lock.unlock();
-				m_cond.broadcast();
+				queueTaskslock_.unlock();
+				queueTasksCond_.broadcast();
 			 	return false ;
 			}
-			task = m_tasks.front();
-			m_tasks.pop();
-			m_lock.unlock();
-			m_cond.broadcast();
+			task = queueTasks_.front();
+			queueTasks_.pop();
+			queueTaskslock_.unlock();
+			queueTasksCond_.broadcast();
 			std::cout << "get task" << std::endl ;
 			return true ;
 		}
-		 MyConf &m_conf ; 
-	private:
-		ThreadPool(const ThreadPool& obj) ;
+		
+        MyConf &conf_; // 配置对象的引用                       
+	
+    private:
+        // 禁止赋值和复制
+        ThreadPool(const ThreadPool& obj) ;
 		ThreadPool& operator = (const ThreadPool& obj) ;
-		std::vector<MyThread> m_threads ;
-		std::queue<MyTask> m_tasks ;
-		MyLock m_lock ;
-		MyCondition m_cond ;
-		bool m_on ;
-		MyCacheThread m_cachethread ;
+		
+        std::vector<MyThread> vecThreads_ ;   // 存放工作线程的容器
+		std::queue<MyTask>    queueTasks_ ;   // 存放任务的队列
+		
+        MyLock queueTaskslock_ ;
+		MyCondition queueTasksCond_ ;
+		
+        bool isStarted_ ;                     // 用于标识线程池是否开启的变量
+		
+        MyCacheThread cacheThread_ ;          // 定时扫描内存cache的线程
 };
+
+
+
 #endif
