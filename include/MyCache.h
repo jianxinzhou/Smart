@@ -47,13 +47,13 @@ class MyCache
             std::ifstream infile(fileName.c_str());
             if(!infile)
             {
-                std::cout << "cache file: " << file_name << std::endl ; 
+                std::cout << "cache file: " << fileName << std::endl ; 
                 throw std::runtime_error("open cache file fail !");
             }
             std::string query , result;
             while(infile >> query >> result)
             {
-                hashmap_.insert(std::make_pair<std::string, std::string>(query, result));
+                hashmap_.insert(std::make_pair(query, result));
             }
             infile.close();
         }

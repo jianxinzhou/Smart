@@ -1,9 +1,3 @@
-/*************************************************************************
-	> File Name: testmain.cpp
-	> Author: Comst
-	> Mail:750145240@qq.com 
-	> Created Time: Sun 04 May 2014 10:46:22 AM CST
- ************************************************************************/
 #include "ThreadPool.h"
 #include "MySocket.h"
 #include "MyConf.h"
@@ -11,7 +5,7 @@
 int main(int argc, char* argv[])
 {
 	MyConf conf(argv[1]);
-	conf.show();
+//	conf.show();
 	ThreadPool apool(conf) ;
 	MySocket socket(conf);
 	apool.on();

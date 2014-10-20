@@ -9,48 +9,54 @@
 #include <functional>
 #include <algorithm>
 #include "MyCache.h"
-void MyTask::excute(MyCache& cache)
+
+
+// 执行任务，并将结果发回客户端
+void MyTask::excute(MyCache& cache) // cache_通过工作线程传入
 {
-	//	std::cout <<"--------------------------------------------------"<<std::endl ;
-	//	m_dict->show() ;
-	//	std::map<std::string, int>::iterator iter ;
-	//	for(iter = m_dict ->begin(); iter != m_dict -> end(); iter ++)	{
-	//		std::cout << "word :" << iter -> first <<"  frequence: " << iter -> second << std::endl ;
-	//	}
-	m_fd = socket(AF_INET, SOCK_DGRAM, 0);
-	std::cout << "Task excute" << std::endl ;
-	HashMap::hash_map<std::string, std::string , MyHashFn>::iterator iter ;
-	iter =  cache.is_mapped(m_express) ;
-	if(iter != cache.m_cache.end())
+    peerfd_ = socket(AF_INET, SOCK_DGRAM, 0);
+    std::cout << "Task excute" << std::endl ;
+    std::unordered_map<std::string, std::string>::iterator iter;
+    iter =  cache.isMapped(queryWord_);
+	if(iter != cache.hashmap_.end())
 	{
-		std::cout << " cached "  << std::endl ;
-		int iret =sendto(m_fd, (iter -> second).c_str() , (iter -> second).size(), 0, (struct sockaddr*)&m_addr, sizeof(m_addr));
-		std::cout <<"send:" << iret << std::endl ;
-	}else 
+        std::cout << " cached "  << std::endl;
+        int iret = sendto(peerfd_, (iter -> second).c_str(), 
+                  (iter -> second).size(), 0, 
+                  (struct sockaddr*)&addr_, sizeof(addr_));
+        std::cout <<"send: " << iret << std::endl ;
+    }
+    else 
 	{
 		std::cout << " no cached " << std::endl ;
-		get_result() ;
-		//std::cout << inet_ntoa(m_addr.sin_addr) << std::endl ;
-		if(m_result.empty())
-		{
-
-			std::string res = "no anwser !" ;
-			int iret =sendto(m_fd, res.c_str(), res.size(), 0, (struct sockaddr*)&m_addr, sizeof(m_addr));
-			std::cout <<"send:" << iret << std::endl ;
-		}else 
-		{
-			MyResult res = m_result.top() ;
-			int iret =sendto(m_fd, res.m_word.c_str(), res.m_word.size(), 0, (struct sockaddr*)&m_addr, sizeof(m_addr));
-			std::cout <<"send:" << iret << std::endl ;
-			cache.map_to_cache(m_express, res.m_word);
-		}
-	}
+        get_result();
+        //std::cout << inet_ntoa(m_addr.sin_addr) << std::endl ;
+        if(result_.empty())
+        {
+            std::string res = "no anwser !" ;
+            int iret = sendto(peerfd_, res.c_str(), 
+                       res.size(), 0, 
+                       (struct sockaddr*)&addr_, sizeof(addr_));
+            std::cout <<"send: " << iret << std::endl;
+        }
+        else 
+        {
+            MyResult res = result_.top();
+            int iret = sendto(peerfd_, res.word_.c_str(), 
+                              res.word_.size(), 0, 
+                              (struct sockaddr*)&addr_, sizeof(addr_));
+            std::cout <<"send:" << iret << std::endl ;
+            cache.map_to_cache(queryWord_, res.word_);
+        }
+    }
 }
-int MyTask::editdistance(  const std::string& right)
+
+// 计算编辑距离
+int MyTask::editdistance(const std::string& right)
 {
-	std::cout <<__FILE__<<std::endl ;
+	std::cout << __FILE__ << std::endl ;
 	std::cout << " ----------edit_dist right:------------" << right <<"  size:" << right.size() << std::endl ;
-	int len_left = length(m_express);
+	int len_left = length(queryWord_);
 	int len_right = length(right);
 	int ** arr_dist = new int* [len_left + 1];
 	int index , index_left, index_right;
@@ -70,13 +76,13 @@ int MyTask::editdistance(  const std::string& right)
 	}
 	for(index_i = 1 , index_left = 0;  index_i <= len_left; index_i ++, index_left ++)
 	{
-		if(m_express[index_left] & (1 << 7))
+		if(queryWord_[index_left] & (1 << 7))
 		{
-			subleft = m_express.substr(index_left, 2);
+			subleft = queryWord_.substr(index_left, 2);
 			index_left ++ ; 
 		}else 
 		{
-			subleft = m_express[index_left];
+			subleft = queryWord_[index_left];
 
 		}
 		for(index_j = 1 , index_right = 0; index_j <= len_right; index_j ++ ,index_right ++)
@@ -107,14 +113,14 @@ void MyTask::satistic(std::set<int> & iset)
 	std::set<int>::iterator iter ;
 	for( iter = iset.begin() ;  iter != iset.end() ;  iter ++)
 	{
-		int dist = editdistance(  ((*m_vec)[ *iter ]).first  );
+		int dist = editdistance(  ((*vecDictPtr_)[ *iter ]).first  );
 			if(dist < 3)
 			{
 				MyResult res ;
-				res.m_word = ((*m_vec)[ *iter ]).first ;
-				res.m_dist = dist ;
-				res.m_frequence = ((*m_vec)[ *iter ]).second ; 
-				m_result.push( res );
+				res.word_ = ((*vecDictPtr_)[ *iter ]).first ;
+				res.distance_ = dist ;
+				res.frequence_ = ((*vecDictPtr_)[ *iter ]).second ; 
+				result_.push( res );
 			}
 	}
 	/*
@@ -135,20 +141,20 @@ void MyTask::get_result()
 {
 	std::string ch ;
 	int index ;
-	for(index = 0 ; index != m_express.size(); index ++ )
+	for(index = 0 ; index != queryWord_.size(); index ++ )
 	{
-		if(m_express[index] & (1 << 7))
+		if(queryWord_[index] & (1 << 7))
 		{
-			ch = m_express.substr(index, 2) ;
+			ch = queryWord_.substr(index, 2) ;
 			index ++ ;
 		}else 
 		{
-			ch = m_express.substr(index, 1);
+			ch = queryWord_.substr(index, 1);
 		}
-		if( ( *m_index ).count(ch) )
+		if( ( *mapIndexPtr_ ).count(ch) )
 		{
 			std::cout << "map_ cout return true " << std::endl ;
-			satistic( (*m_index)[ch] ) ;
+			satistic( (*mapIndexPtr_)[ch] ) ;
 		}
 	} 
 
