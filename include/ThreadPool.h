@@ -15,7 +15,7 @@
 class ThreadPool
 {
 	public:
-		friend class MyCacheThread ;
+	    friend class MyCacheThread ;
 		
         ThreadPool(MyConf &conf, int size = 12)
             :vecThreads_(size),
@@ -24,16 +24,16 @@ class ThreadPool
              isStarted_(false),
              conf_(conf),
              cacheThread_(size)
+	{
+		std::vector<MyThread>::iterator iter ;
+		for(iter = vecThreads_.begin(); 
+                    iter != vecThreads_.end(); 
+                    ++iter )
 		{
-			std::vector<MyThread>::iterator iter ;
-			for(iter = vecThreads_.begin(); 
-                iter != vecThreads_.end(); 
-                ++iter )
-			{
-				iter -> get_related(this);       // 使线程池中的每一个工作线程持有线程池对象的指针
-			}
-			cacheThread_.get_related(this);      // 使线程池中的扫描线程持有线程池对象的指针
+		    iter -> get_related(this);       // 使线程池中的每一个工作线程持有线程池对象的指针
 		}
+		cacheThread_.get_related(this);      // 使线程池中的扫描线程持有线程池对象的指针
+	}
 
 		void on()
 		{
@@ -95,13 +95,13 @@ class ThreadPool
     private:
         // 禁止赋值和复制
         ThreadPool(const ThreadPool& obj) ;
-		ThreadPool& operator = (const ThreadPool& obj) ;
+	ThreadPool& operator = (const ThreadPool& obj) ;
 		
         std::vector<MyThread> vecThreads_ ;   // 存放工作线程的容器
-		std::queue<MyTask>    queueTasks_ ;   // 存放任务的队列
+	std::queue<MyTask>    queueTasks_ ;   // 存放任务的队列
 		
         MyLock queueTaskslock_ ;
-		MyCondition queueTasksCond_ ;
+	MyCondition queueTasksCond_ ;
 		
         bool isStarted_ ;                     // 用于标识线程池是否开启的变量
 		
