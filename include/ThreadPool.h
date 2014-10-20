@@ -26,43 +26,43 @@ class ThreadPool
              conf_(conf),
              cacheThread_(size)
         {
-		    std::vector<MyThread>::iterator iter ;
-		    for(iter = vecThreads_.begin(); 
+            std::vector<MyThread>::iterator iter ;
+            for(iter = vecThreads_.begin(); 
                 iter != vecThreads_.end(); 
-                ++iter )
+                ++iter)
             {
-		        iter -> get_related(this);       // 使线程池中的每一个工作线程持有线程池对象的指针
+                iter -> get_related(this);       // 使线程池中的每一个工作线程持有线程池对象的指针
             }
-		    cacheThread_.get_related(this);      // 使线程池中的扫描线程持有线程池对象的指针
-	    }
-
-		void on()
-		{
-			if(isStarted_)
-			{
-				return ;
-			}
-			isStarted_ = true ;
-			std::vector<MyThread>::iterator iter ;
-			for(iter = vecThreads_.begin(); iter != vecThreads_.end(); iter ++)
-			{
-				iter -> start();    // 开启工作线程
-			}
-			cacheThread_.start();   // 开启扫描线程
-		}
-		
+                cacheThread_.get_related(this);      // 使线程池中的扫描线程持有线程池对象的指针
+        }
+        
+        void on()
+        {
+            if(isStarted_)
+            {
+                return ;
+            }
+            isStarted_ = true ;
+            std::vector<MyThread>::iterator iter ;
+            for(iter = vecThreads_.begin(); iter != vecThreads_.end(); iter ++)
+            {
+                iter -> start();    // 开启工作线程
+            }
+            cacheThread_.start();   // 开启扫描线程
+        }
+        
         void off()
-		{
-			if(isStarted_)
-			{
-				isStarted_ = false ;
-				queueTasksCond_.broadcast();
-				while(!queueTasks_.empty())
-				{
-					queueTasks_.pop();
-				} 
-			}
-		}
+        {
+            if(isStarted_)
+            {
+                isStarted_ = false ;
+                queueTasksCond_.broadcast();
+                while(!queueTasks_.empty())
+                {
+                    queueTasks_.pop();
+                } 
+            }
+        }
 		
         void allocate_task( MyTask& task)
 		{
@@ -72,28 +72,28 @@ class ThreadPool
 			queueTaskslock_.unlock();
 			queueTasksCond_.broadcast();
 		}
-		
+        
         bool get_task(MyTask &task)
-		{
-			queueTaskslock_.lock();
-			while(isStarted_ && queueTasks_.empty())
-			{
-				queueTasksCond_.wait();
-			}
-			if(!isStarted_)
-			{ 
-				queueTaskslock_.unlock();
-				queueTasksCond_.broadcast();
-			 	return false ;
-			}
-			task = queueTasks_.front();
-			queueTasks_.pop();
-			queueTaskslock_.unlock();
-			queueTasksCond_.broadcast();
-			std::cout << "get task" << std::endl ;
-			return true ;
-		}
-		
+        {
+            queueTaskslock_.lock();
+            while(isStarted_ && queueTasks_.empty())
+            {
+                queueTasksCond_.wait();
+            }
+            if(!isStarted_)
+            { 
+                queueTaskslock_.unlock();
+                queueTasksCond_.broadcast();
+                return false ;
+            }
+            task = queueTasks_.front();
+            queueTasks_.pop();
+            queueTaskslock_.unlock();
+            queueTasksCond_.broadcast();
+            std::cout << "get task" << std::endl ;
+            return true ;
+        }
+        
         MyConf &conf_; // 配置对象的引用                       
 	
     private:
