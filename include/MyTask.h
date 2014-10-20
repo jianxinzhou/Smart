@@ -14,50 +14,72 @@
 #include "MyResult.h"
 #include "MyCompare.h"
 #include <unistd.h>
+
 class MyCache ;
+
 class MyTask
 {
-	public:
-		MyTask( MyConf& conf):m_express(""),m_vec( &(conf.m_vec)),m_index(&(conf.m_index))
-	{
-		memset(&m_addr, 0, sizeof(m_addr));
-	}
-		MyTask(const std::string &express, const struct sockaddr_in &addr ,  MyConf& conf):m_express(express), m_addr(addr),m_vec(&conf.m_vec), m_index(&conf.m_index)
-	{
-	}
-		void excute(MyCache& cache) ;
-		int length(const std::string& str) 
-		{
-			int index ;
-			int len = 0 ;
-			for(index = 0 ; index != str.size(); index ++)
-			{
-				if(str[index] & (1 << 7))
-				{
-					index ++ ;
-				}
-				len ++ ;
-			}
-			return len ;
-		}
-		~MyTask()
-		{
-			close(m_fd);
-		}
-		void satistic(std::set<int> & iset ) ;
-	private:
-		std::string m_express ;
-		struct sockaddr_in m_addr ;
-		int m_fd ;
-		std::vector<std::pair<std::string, int> >*  m_vec ;
-		std::map<std::string, std::set<int> >* m_index ;
-		std::priority_queue<MyResult, std::vector<MyResult>, MyCompare> m_result ;
-		void get_result();
-		int editdistance( const std::string& right);
-		int triple_min(const int &a, const int &b, const int& c )
-		{
-			return a < b ? (a < c ? a : c) : (b < c ? b : c) ;
-		}
+    public:
+        MyTask( MyConf& conf)
+            : queryWord_(""),
+              vecDictPtr_(&(conf.vecDict_)),
+              mapIndexPtr_(&conf.mapIndex_)
+        {
+            memset(&addr_, 0, sizeof(addr_));
+        }
+        
+        
+        MyTask(const std::string &queryWord, 
+               const struct sockaddr_in &addr ,  
+               MyConf& conf)
+            : queryWord_(queryWord), 
+              addr_(addr),
+              vecDictPtr_(&conf.vecDict_), 
+              mapIndexPtr_(&conf.mapIndex_)
+        { }
+        
+        void excute(MyCache& cache) ;      // 执行函数。需要传递一个MyCache对象 。
+        
+        int length(const std::string& str) // 计算查询词的长度
+        {
+            int index ;
+            int len = 0 ;
+            for(index = 0 ; index != str.size(); index ++)
+            {
+                if(str[index] & (1 << 7))
+                {
+                    index ++ ;
+                }
+                len ++ ;
+            }
+            return len ;
+        }
+        
+        ~MyTask()
+        {
+            close(peerfd_);
+        }
+        
+        void satistic(std::set<int> & iset ); //计算vecDictPtr_指向的vector中下标在iset中的词与用户输入词的编辑距离 。
+    
+    
+    private:
+        std::string queryWord_;       // 用户的查询词
+        struct sockaddr_in addr_;     // 用于保存用户端地址和端口号
+        int peerfd_;                  // 与用户端通信的socket描述符
+        
+        std::vector<std::pair<std::string, int> >*  vecDictPtr_;      // 指向保存数据词典的指针
+        std::map<std::string, std::set<int> >* mapIndexPtr_;          // 指向词典索引的指针
+        
+        std::priority_queue<MyResult, std::vector<MyResult>, MyCompare> result_; // 用于保存查询结果的优先级队列
+        
+        void get_result(); // 根据用户的查询词获取最终结果。最终结果将放在优先级队列里
+        int editdistance( const std::string& right); // 计算right与用户输入查询词的编辑距离
+        
+        int triple_min(const int &a, const int &b, const int& c ) // 返回3个数中的最小值
+        {
+            return a < b ? (a < c ? a : c) : (b < c ? b : c) ;
+        }
 
 };
 #endif
