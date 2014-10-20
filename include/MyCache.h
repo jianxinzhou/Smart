@@ -1,63 +1,66 @@
 #ifndef __MYCACHE_H__
 #define __MYCACHE_H__
-#include <ext/hash_map>
+#include <unordered_map>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <fstream>
 #include "MyLock.h"
-#define HashMap __gnu_cxx
-class MyHashFn
-{
-	public:
-		std::size_t operator()(const std::string& str) const
-		{
-			return HashMap::__stl_hash_string(str.c_str()) ;
-		}
-};
+
+// 数据成员为
+// unorderer_map
+// 控制互斥访问unordered_map的锁：hashmapLock_
 class MyCache
 {
 	public:
-		MyCache(const int &num = 100 ):m_cache(num), m_lock()
+        std::unordered_map<std::string, std::string> hashmap_;
+		
+        void map_to_cache(std::string& key, std::string& value )
 		{
+			hashmapLock_.lock();
+			hashmap_[key] = value;
+			hashmapLock_.unlock();
 		}
-		void map_to_cache(std::string& key, std::string& value )
+		
+        std::unordered_map<std::string, std::string>::iterator 
+        isMapped(const std::string& word)
 		{
-			m_lock.lock();
-			m_cache[key] = value ;
-			m_lock.unlock();
-		}
-		HashMap::hash_map<std::string, std::string, MyHashFn>::iterator  is_mapped(const std::string& word)
-		{
-			return m_cache.find(word);
+			return hashmap_.find(word);
 		} 
-		void write_to_file(std::ofstream& fout)
+		
+        // 将内存cache写入硬盘
+        void write_to_file(std::ofstream& outfile)
 		{
-			m_lock.lock();
-			HashMap::hash_map<std::string, std::string, MyHashFn>::iterator iter ;
-			for(iter = m_cache.begin(); iter != m_cache.end(); iter ++)
+			hashmapLock_.lock();
+			for(std::unordered_map<std::string, std::string>::iterator iter = hashmap_.begin(); 
+                iter != hashmap_.end();
+                ++iter)
 			{
-				fout << iter -> first << "\t" << iter -> second << std::endl ;
+				outfile << iter -> first << "\t" << iter -> second << std::endl ;
 			}
-			m_lock.unlock();
+			hashmapLock_.unlock();
 		}
-		void read_from_file(const std::string &file_name)
+		
+        // 从硬盘cache读入内存
+        void read_from_file(const std::string &fileName)
 		{
-			std::ifstream fin(file_name.c_str());
-			if(!fin)
+			std::ifstream infile(fileName.c_str());
+			if(!infile)
 			{
 				std::cout << "cache file: " << file_name << std::endl ; 
 				throw std::runtime_error("open cache file fail !");
 			}
-			std::string key , value ;
-			while(fin >> key >> value)
+			std::string query , result;
+			while(infile >> query >> result)
 			{
-				m_cache.insert(make_pair(key, value));
+				hashmap_.insert(std::make_pair<std::string, std::string>(query, result));
 			}
-			fin.close();
+			infile.close();
 		}
-		HashMap::hash_map<std::string, std::string, MyHashFn> m_cache ;
-	private:
-		MyLock m_lock ;
+	
+    private:
+		MyLock hashmapLock_;
 };
+
+
 #endif

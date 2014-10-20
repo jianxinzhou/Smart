@@ -5,13 +5,15 @@
 class MyLock
 {
 	public:
-		friend class MyCondition ;
 		MyLock()
 		{
+            // 初始化成功返回0
 			if( pthread_mutex_init(&m_mutex, NULL) )
 			{
-			 	std::cout << __DATE__<<" "<<__TIME__<<" "<<__FILE__ <<" " <<__LINE__<<":"<<"pthread_mutex_init" << std::endl ;
-				exit (-1) ; 
+			 	std::cout << __DATE__  << " " << __TIME__ << " " 
+                          << __FILE__  << " " << __LINE__ << ":"
+                          << "pthread_mutex_init failed!" << std::endl;
+				exit (-1); 
 			}
 		}
 		void lock()
@@ -26,9 +28,13 @@ class MyLock
 		{
 			pthread_mutex_destroy(&m_mutex) ;
 		}
-	private:
-//	MyLock(const MyLock& obj) ;
-//	MyLock& operator =(const MyLock& obj) ;
-	pthread_mutex_t m_mutex ;
+	
+    private:
+	    pthread_mutex_t m_mutex ;
+		
+        friend class MyCondition ;
+
 };
+
+
 #endif
