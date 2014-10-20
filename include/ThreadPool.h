@@ -14,8 +14,9 @@
 
 class ThreadPool
 {
-	public:
-	    friend class MyCacheThread ;
+    public:
+        
+        friend class MyCacheThread ;
 		
         ThreadPool(MyConf &conf, int size = 12)
             :vecThreads_(size),
@@ -24,16 +25,16 @@ class ThreadPool
              isStarted_(false),
              conf_(conf),
              cacheThread_(size)
-	{
-		std::vector<MyThread>::iterator iter ;
-		for(iter = vecThreads_.begin(); 
-                    iter != vecThreads_.end(); 
-                    ++iter )
-		{
-		    iter -> get_related(this);       // 使线程池中的每一个工作线程持有线程池对象的指针
-		}
-		cacheThread_.get_related(this);      // 使线程池中的扫描线程持有线程池对象的指针
-	}
+        {
+		    std::vector<MyThread>::iterator iter ;
+		    for(iter = vecThreads_.begin(); 
+                iter != vecThreads_.end(); 
+                ++iter )
+            {
+		        iter -> get_related(this);       // 使线程池中的每一个工作线程持有线程池对象的指针
+            }
+		    cacheThread_.get_related(this);      // 使线程池中的扫描线程持有线程池对象的指针
+	    }
 
 		void on()
 		{
@@ -49,7 +50,8 @@ class ThreadPool
 			}
 			cacheThread_.start();   // 开启扫描线程
 		}
-		void off()
+		
+        void off()
 		{
 			if(isStarted_)
 			{
@@ -61,7 +63,8 @@ class ThreadPool
 				} 
 			}
 		}
-		void allocate_task( MyTask& task)
+		
+        void allocate_task( MyTask& task)
 		{
 			queueTaskslock_.lock();
 			std::cout << "Add Task" << std::endl ;
@@ -69,7 +72,8 @@ class ThreadPool
 			queueTaskslock_.unlock();
 			queueTasksCond_.broadcast();
 		}
-		bool get_task(MyTask &task)
+		
+        bool get_task(MyTask &task)
 		{
 			queueTaskslock_.lock();
 			while(isStarted_ && queueTasks_.empty())
@@ -95,13 +99,13 @@ class ThreadPool
     private:
         // 禁止赋值和复制
         ThreadPool(const ThreadPool& obj) ;
-	ThreadPool& operator = (const ThreadPool& obj) ;
-		
+        ThreadPool& operator = (const ThreadPool& obj) ;
+        
         std::vector<MyThread> vecThreads_ ;   // 存放工作线程的容器
-	std::queue<MyTask>    queueTasks_ ;   // 存放任务的队列
+        std::queue<MyTask>    queueTasks_ ;   // 存放任务的队列
 		
         MyLock queueTaskslock_ ;
-	MyCondition queueTasksCond_ ;
+        MyCondition queueTasksCond_ ;
 		
         bool isStarted_ ;                     // 用于标识线程池是否开启的变量
 		
