@@ -16,21 +16,21 @@ class MyCondition
                 exit (-1);
             }
         }
-		
+        
         void wait()
-		{
-			pthread_cond_wait(&m_cond, &m_mutex);
-		}
-		
+        {
+            pthread_cond_wait(&m_cond, &m_mutex);
+        }
+        
         void broadcast()
-		{
-			pthread_cond_broadcast(&m_cond);
-		}
-		
+        {
+            pthread_cond_broadcast(&m_cond);
+        }
+        
         ~MyCondition()
-		{
-			pthread_cond_destroy(&m_cond);
-		}
+        {
+            pthread_cond_destroy(&m_cond);
+        }
 	
     private:
         pthread_mutex_t  &m_mutex;
