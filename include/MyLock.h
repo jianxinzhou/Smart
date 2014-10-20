@@ -16,26 +16,26 @@ class MyLock
                 exit (-1); 
             }
         }
-		
+        
         void lock()
-		{
-			pthread_mutex_lock(&m_mutex) ;
-		}
-		
+        {
+            pthread_mutex_lock(&m_mutex);
+        }
+        
         void unlock()
-		{
-			pthread_mutex_unlock(&m_mutex) ;
-		}
-		
+        {
+            pthread_mutex_unlock(&m_mutex);
+        }
+        
         ~MyLock()
-		{
-			pthread_mutex_destroy(&m_mutex) ;
-		}
+        {
+            pthread_mutex_destroy(&m_mutex);
+        }
 	
     private:
         pthread_mutex_t m_mutex ;
         
-        friend class MyCondition ;
+        friend class MyCondition;
 
 };
 
