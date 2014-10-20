@@ -8,7 +8,7 @@ class ThreadPool;
 // 继承抽象类Thread
 class MyThread : public Thread 
 {
-	public:
+    public:
         void get_related(ThreadPool* p)
         {
             threadPoolPtr_ = p ;
