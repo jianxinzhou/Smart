@@ -63,15 +63,15 @@ class ThreadPool
                 } 
             }
         }
-		
+        
         void allocate_task( MyTask& task)
-		{
-			queueTaskslock_.lock();
-			std::cout << "Add Task" << std::endl ;
-			queueTasks_.push(task);
-			queueTaskslock_.unlock();
-			queueTasksCond_.broadcast();
-		}
+        {
+            queueTaskslock_.lock();
+            std::cout << "Add Task" << std::endl ;
+            queueTasks_.push(task);
+            queueTaskslock_.unlock();
+            queueTasksCond_.broadcast();
+        }
         
         bool get_task(MyTask &task)
         {
