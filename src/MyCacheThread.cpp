@@ -1,15 +1,10 @@
-/*************************************************************************
-  > File Name: MyCacheThread.cpp
-  > Author: Comst
-  > Mail:750145240@qq.com 
-  > Created Time: Fri 09 May 2014 06:36:31 PM CST
- ************************************************************************/
 #include "MyCacheThread.h"
 #include "ThreadPool.h"
 #include "MyThread.h"
 #include "MyCache.h"
 #include <unistd.h>
 #include <fstream>
+
 void MyCacheThread::run()
 {
 	while(true)
@@ -19,33 +14,43 @@ void MyCacheThread::run()
 		std::cout << "scan cache" << std::endl ;
 	}
 }
-void MyCacheThread::get_related(ThreadPool* p)
+
+// 线程池对象中拥有一个扫描线程对象
+// 线程池初始化时，会调用该函数，使该扫描线程对象持有指向线程池对象的指针
+// 并使该扫描线程对象持有线程池中所有工作对象的指针
+void MyCacheThread::get_related(ThreadPool* threadPoolPtr)
 {
-	m_p = p ;
-	std::vector<MyThread>::iterator  iter1 =	(m_p -> m_threads).begin();
-	std::vector<MyThread*>::iterator  iter2  = m_pthreads.begin() ;
-	while(iter2 != m_pthreads.end() && iter1 != (m_p ->m_threads).end())
+	threadPoolPtr_ = threadPoolPtr;
+    
+    std::vector<MyThread>::iterator  iter1  = (threadPoolPtr_ -> vecThreads_).begin();
+	std::vector<MyThread*>::iterator iter2  = vecWorkThreadPtr_.begin() ;
+    
+    while(iter2 != vecWorkThreadPtr_.end() && 
+          iter1 != (threadPoolPtr_ -> vecThreads_).end() )
 	{
-		*iter2 = &(*iter1) ;
-		iter1 ++ ;
-		iter2 ++ ;
-	}
+        *iter2 = &(*iter1);
+        iter1++;
+        iter2++;
+    }
 }
 
 void MyCacheThread::scan_cache()
 {
-	std::vector<MyThread*>::iterator iter = m_pthreads.begin();
-	for(; iter != m_pthreads.end(); iter ++)
-	{
-		( (*iter) ->m_cache ).read_from_file( (m_p -> m_conf).get_map()["my_cache"].c_str()) ;
-			std::ofstream fout( (m_p -> m_conf).get_map()["my_cache"].c_str() ) ;
-			if(!fout)
-			{
-				throw std::runtime_error("scan cache : open cache failed");
-			}		
-
-		( (*iter ) -> m_cache ).write_to_file(fout) ;
-			fout.close();
-	}
+	std::vector<MyThread*>::iterator iter = vecWorkThreadPtr_.begin();
+    for(; 
+        iter != vecWorkThreadPtr_.end(); 
+        ++iter)
+    {
+        ( (*iter) -> cache_ ).read_from_file( (threadPoolPtr_ -> conf_).getMapConf()["my_cache"].c_str()) ;
+        
+        std::ofstream outfile( (threadPoolPtr_ -> conf_).getMapConf()["my_cache"].c_str() ) ;
+        if(!outfile)
+        {
+            throw std::runtime_error("scan cache : open cache failed");
+        }		
+        
+        ( (*iter ) -> cache_ ).write_to_file(outfile) ;
+        outfile.close();
+    }
 }
 
