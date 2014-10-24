@@ -14,29 +14,18 @@
 #include "MyResult.h"
 #include "MyCompare.h"
 #include <unistd.h>
+#include <stdint.h>
 
 class MyCache ;
 
 class MyTask
 {
     public:
-        MyTask( MyConf& conf)
-            : queryWord_(""),
-              vecDictPtr_(&(conf.vecDict_)),
-              mapIndexPtr_(&conf.mapIndex_)
-        {
-            memset(&addr_, 0, sizeof(addr_));
-        }
-        
+        MyTask( MyConf& conf);
         
         MyTask(const std::string &queryWord, 
                const struct sockaddr_in &addr ,  
-               MyConf& conf)
-            : queryWord_(queryWord), 
-              addr_(addr),
-              vecDictPtr_(&conf.vecDict_), 
-              mapIndexPtr_(&conf.mapIndex_)
-        { }
+               MyConf& conf);
         
         void excute(MyCache& cache) ;      // 执行函数。需要传递一个MyCache对象 。
         
@@ -64,17 +53,19 @@ class MyTask
     
     
     private:
-        std::string queryWord_;       // 用户的查询词
+        std::string queryWord_;                  // 用户的查询词
+        std::vector<uint32_t> vecQueryWord_;     // 经过转换后的用户的查询词
         struct sockaddr_in addr_;     // 用于保存用户端地址和端口号
         int peerfd_;                  // 与用户端通信的socket描述符
         
-        std::vector<std::pair<std::string, int> >*  vecDictPtr_;      // 指向保存数据词典的指针
-        std::map<std::string, std::set<int> >* mapIndexPtr_;          // 指向词典索引的指针
+        std::vector<std::pair<std::vector<uint32_t>, int> > *vecDictPtr_;      // 指向保存数据词典的指针
+        std::vector<std::pair<std::string, int>> *strDictPtr_;
+        std::map<uint32_t, std::set<int> >* mapIndexPtr_;          // 指向词典索引的指针
         
         std::priority_queue<MyResult, std::vector<MyResult>, MyCompare> result_; // 用于保存查询结果的优先级队列
         
         void get_result(); // 根据用户的查询词获取最终结果。最终结果将放在优先级队列里
-        int editdistance( const std::string& right); // 计算right与用户输入查询词的编辑距离
+        int editdistance(const std::vector<uint32_t> &right); // 计算right与用户输入查询词的编辑距离
         
         int triple_min(const int &a, const int &b, const int& c ) // 返回3个数中的最小值
         {

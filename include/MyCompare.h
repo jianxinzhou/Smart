@@ -6,6 +6,7 @@ class MyCompare
     public:
 
         // 重载函数调用操作符，主要用于初始化优先级队列。
+
         bool operator()(const MyResult& left, const MyResult& right)
         {
             if(left.distance_ > right.distance_)
